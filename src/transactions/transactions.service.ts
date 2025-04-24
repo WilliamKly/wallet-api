@@ -6,83 +6,104 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Transaction } from './transaction.entity';
 import { TransferDto } from './dto/transfer.dto';
 
+type SanitizedTransaction = {
+  id: string
+  amount: number
+  reversed: boolean
+  createdAt: Date
+  sender: { id: string; name: string; email: string }
+  receiver: { id: string; name: string; email: string }
+  receiverUser: boolean
+}
+
 @Injectable()
 export class TransactionsService {
-    constructor(
-        @InjectRepository(User)
-        private userRepository: Repository<User>,
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
 
-        @InjectRepository(Transaction)
-        private transactionRepository: Repository<Transaction>,
-        
-        private dataSource: DataSource
-    ) {}
+    @InjectRepository(Transaction)
+    private transactionRepository: Repository<Transaction>,
 
-    async deposit(userId: string, dto: DepositDto) {
-        if (dto.amount <= 0) throw new BadRequestException('O valor do depósito precisa ser maior que zero')
+    private dataSource: DataSource
+  ) { }
 
-        const user = await this.userRepository.findOne({ where: { id: userId } })
+  async deposit(userId: string, dto: DepositDto) {
+    if (dto.amount <= 0) throw new BadRequestException('O valor do depósito precisa ser maior que zero')
 
-        if (!user) throw new NotFoundException('Usuário não encontrado')
+    const user = await this.userRepository.findOne({ where: { id: userId } })
 
-        user.balance = +user.balance + +dto.amount;
+    if (!user) throw new NotFoundException('Usuário não encontrado')
 
-        await this.userRepository.save(user)
+    user.balance = +user.balance + +dto.amount;
 
-        return { message: 'Depósito realizado com sucesso', newBalance: user.balance }
-    }
+    await this.userRepository.save(user)
 
-    async transfer(senderId: string, dto: TransferDto) {
-        if (dto.amount <= 0) throw new BadRequestException("O valor precisa ser maior que zero")
-        if (senderId === dto.receiverId) throw new BadRequestException("Você não pode transferir para si mesmo")
+    return { message: 'Depósito realizado com sucesso', newBalance: user.balance }
+  }
 
-        return this.dataSource.transaction(async manager => {
-            const sender = await manager.findOne(User, { where: { id: senderId } })
-            const receiver = await manager.findOne(User, { where: { id: dto.receiverId } })
+  async transfer(senderId: string, dto: TransferDto) {
+    if (dto.amount <= 0) throw new BadRequestException("O valor precisa ser maior que zero")
+    if (senderId === dto.receiverId) throw new BadRequestException("Você não pode transferir para si mesmo")
 
-            if (!sender || !receiver) throw new NotFoundException("Usuário não encontrado")
+    return this.dataSource.transaction(async manager => {
+      const sender = await manager.findOne(User, { where: { id: senderId } })
+      const receiver = await manager.findOne(User, { where: { id: dto.receiverId } })
 
-            if (+sender.balance < +dto.amount) throw new BadRequestException("Saldo insuficiente")
+      if (!sender || !receiver) throw new NotFoundException("Usuário não encontrado")
 
-            sender.balance = +sender.balance - +dto.amount
-            receiver.balance = +receiver.balance + +dto.amount
+      if (+sender.balance < +dto.amount) throw new BadRequestException("Saldo insuficiente")
 
-            await manager.save(sender)
-            await manager.save(receiver)
+      sender.balance = +sender.balance - +dto.amount
+      receiver.balance = +receiver.balance + +dto.amount
 
-            const transaction = manager.create(Transaction, {
-                sender,
-                receiver,
-                amount: dto.amount,
-                reversed: false
-            })
+      await manager.save(sender)
+      await manager.save(receiver)
 
-            await manager.save(transaction)
+      const transaction = manager.create(Transaction, {
+        sender,
+        receiver,
+        amount: dto.amount,
+        reversed: false
+      })
 
-            return {
-                message: "Transferência realizada com sucesso!",
-                transactionId: transaction.id
-            }
-        })
-        
-    }
+      await manager.save(transaction)
 
-    async findAll(currentUserId: string): Promise<(Transaction & { receiverUser: boolean })[]> {
-        const transactions = await this.transactionRepository.find({
-          where: [
-            { sender: { id: currentUserId } },
-            { receiver: { id: currentUserId } }
-          ],
-          relations: ['sender', 'receiver'],
-          order: {
-            createdAt: 'DESC'
-          }
-        });
-      
-        return transactions.map(tx => ({
-          ...tx,
-          receiverUser: tx.receiver.id === currentUserId,
-        }));
+      return {
+        message: "Transferência realizada com sucesso!",
+        transactionId: transaction.id
       }
-      
+    })
+
+  }
+
+  async findAll(currentUserId: string): Promise<SanitizedTransaction[]> {
+    const transactions = await this.transactionRepository.find({
+      where: [
+        { sender: { id: currentUserId } },
+        { receiver: { id: currentUserId } }
+      ],
+      relations: ['sender', 'receiver'],
+      order: { createdAt: 'DESC' }
+    });
+  
+    return transactions.map(tx => ({
+      id: tx.id,
+      amount: tx.amount,
+      reversed: tx.reversed,
+      createdAt: tx.createdAt,
+      sender: {
+        id: tx.sender.id,
+        name: tx.sender.name,
+        email: tx.sender.email
+      },
+      receiver: {
+        id: tx.receiver.id,
+        name: tx.receiver.name,
+        email: tx.receiver.email
+      },
+      receiverUser: tx.receiver.id === currentUserId,
+    }));
+  }
+
 }

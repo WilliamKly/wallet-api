@@ -1,98 +1,252 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# 📘 Documentação - Sistema de Carteira Digital
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Este projeto consiste em um sistema de carteira digital com **NestJS (backend)** e **React (frontend)**. Ele permite cadastro, autenticação, transferências, reversões e visualização de usuários/transações.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🔧 Requisitos
 
-## Project setup
+- [Node.js](https://nodejs.org/en/) (v18+)
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- (Opcional) [DBeaver](https://dbeaver.io/) para visualizar o banco
+
+---
+
+## 🚀 Rodando o Backend (NestJS)
+
+1. **Clone o projeto e acesse a pasta do backend:**
 
 ```bash
-$ npm install
+git clone https://github.com/WilliamKly/wallet-api.git
+cd wallet-api
 ```
 
-## Compile and run the project
+2. **Crie um arquivo `.env` na raiz com o seguinte conteúdo:**
+
+```env
+JWT_SECRET=supersecret
+JWT_EXPIRES_IN=1d
+RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+DB_HOST=postgres
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=postgres
+DB_NAME=wallet
+```
+
+3. **Suba os containers com Docker:**
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker-compose up --build
 ```
 
-## Run tests
+> Esse comando irá subir:
+> - PostgreSQL (porta 5432)
+> - RabbitMQ (portas 5672 e 15672)
+> - API NestJS (porta 3001)
 
-```bash
-# unit tests
-$ npm run test
+4. **Verifique se a API está funcionando:**
 
-# e2e tests
-$ npm run test:e2e
+Acesse [http://localhost:3001](http://localhost:3001) no navegador ou use ferramentas como o [Postman](https://www.postman.com/).
 
-# test coverage
-$ npm run test:cov
+
+## 🐇 Painel RabbitMQ
+
+- Acesse: [http://localhost:15672](http://localhost:15672)
+- Login: `guest`
+- Senha: `guest`
+
+
+
+
+# 📘 API - Carteira Digital
+
+Esta API permite criar usuários, autenticar, realizar depósitos, transferências, reversões e consultar saldo e transações.
+
+> Todas as rotas que exigem autenticação devem receber o token JWT no header:  
+> `Authorization: Bearer <access_token>`
+
+---
+
+## 🔐 Autenticação
+
+### Criar Usuário
+
+`POST /users`
+
+```json
+{
+  "name": "wildasl",
+  "email": "wdasill@email.com",
+  "password": "123456"
+}
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Fazer Login
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+`POST /auth/login`
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```json
+{
+  "email": "will@email.com",
+  "password": "123456"
+}
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+**Resposta:**
 
-## Resources
+```json
+{
+  "access_token": "..."
+}
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 💰 Transações
 
-## Support
+### Realizar Depósito
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+`POST /transactions/deposit`
 
-## Stay in touch
+**Headers:**  
+`Authorization: Bearer <access_token>`
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```json
+{
+  "amount": 5
+}
+```
 
-## License
+**Resposta:**
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```json
+{
+  "message": "Depósito realizado com sucesso",
+  "newBalance": 5
+}
+```
+
+---
+
+### Transferir Dinheiro
+
+`POST /transactions/transfer`
+
+**Headers:**  
+`Authorization: Bearer <access_token>`
+
+```json
+{
+  "receiverId": "ec198177-b2c6-4db2-83ff-9c66f15e5189",
+  "amount": 150
+}
+```
+
+**Resposta:**
+
+```json
+{
+  "message": "Transferência realizada com sucesso!",
+  "transactionId": "583819e1-b8d5-41e2-b15b-2a61677b7c3f"
+}
+```
+
+---
+
+### Reverter uma Transferência
+
+`POST /reversals/{transactionId}`
+
+**Headers:**  
+`Authorization: Bearer <access_token>`
+
+**Resposta:**
+
+```json
+{
+  "message": "Solicitação registrada",
+  "reversalId": "0c5e7984-1df1-419b-ac75-984b91004821"
+}
+```
+
+---
+
+## 👥 Usuários
+
+### Listar Todos os Usuários
+
+`GET /users`
+
+**Headers:**  
+`Authorization: Bearer <access_token>`
+
+**Resposta:**
+
+```json
+[
+  {
+    "id": "ec198177-b2c6-4db2-83ff-9c66f15e5189",
+    "email": "wdasill@email.com",
+    "name": "wildasl"
+  }
+]
+```
+
+---
+
+### Ver Meu Saldo
+
+`GET /users/balance`
+
+**Headers:**  
+`Authorization: Bearer <access_token>`
+
+**Resposta:**
+
+```json
+[
+  {
+    "balance": "978.00"
+  }
+]
+```
+
+---
+
+## 🔄 Consultar Transações
+
+### Minhas Transações
+
+`GET /transactions`
+
+**Headers:**  
+`Authorization: Bearer <access_token>`
+
+**Resposta:**
+
+```json
+[
+  {
+    "id": "c23990d5-e076-48cf-8e0f-fce66f72f197",
+    "sender": {
+      "id": "fc866f51-dd46-4de5-8918-58fb6c0af739",
+      "email": "testeSenhateste123@gmail.com",
+      "name": "teste",
+    },
+    "receiver": {
+      "id": "b893d7d9-bf7a-4f1d-a8e9-a418bf7364cf",
+      "email": "klevissonweskley13@gmail.com",
+      "name": "Wiliam Klywerston de Oliveira Silva",
+    },
+    "amount": "450.00",
+    "reversed": false,
+    "createdAt": "2025-04-23T23:52:05.183Z",
+    "receiverUser": true
+  }
+]
+```

@@ -24,6 +24,8 @@ services:
       RABBITMQ_DEFAULT_PASS: guest
 
   api:
+    env_file:
+      - .env
     build: .
     ports:
       - '3001:3001'
